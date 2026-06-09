@@ -1,0 +1,23 @@
+name: swlc-ts
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly no --port 6379
+    networks: [swlc-net]
+
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: starciacademy/swlc-sliding-window-api:latest
+    ports: ["3000:3000"]
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on: [redis]
+    networks: [swlc-net]
+
+networks:
+  swlc-net:
+    driver: bridge

@@ -1,0 +1,47 @@
+name: hmtq-go
+
+services:
+  redis-1:
+    image: redis:7-alpine
+    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly no --port 6379
+    networks: [quota-net]
+  redis-2:
+    image: redis:7-alpine
+    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly no --port 6379
+    networks: [quota-net]
+  redis-3:
+    image: redis:7-alpine
+    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly no --port 6379
+    networks: [quota-net]
+
+  cluster-init:
+    image: redis:7-alpine
+    depends_on: [redis-1, redis-2, redis-3]
+    entrypoint:
+      - sh
+      - -c
+      - |
+        sleep 5
+        echo "yes" | redis-cli --cluster create redis-1:6379 redis-2:6379 redis-3:6379 --cluster-replicas 0
+    networks: [quota-net]
+
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: starciacademy/hmtq-quota-api-go:latest
+    ports: ["3000:3000"]
+    environment:
+      REDIS_CLUSTER_NODES: redis-1:6379,redis-2:6379,redis-3:6379
+      USER_LIMIT: "5"
+      TENANT_LIMIT: "20"
+      GLOBAL_LIMIT: "50"
+      WINDOW_MS: "1000"
+    depends_on:
+      cluster-init:
+        condition: service_completed_successfully
+    networks: [quota-net]
+
+networks:
+  quota-net:
+    driver: bridge

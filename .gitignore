@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+out/
+target/
+bin/
+obj/
+.gradle/
+__pycache__/
+*.class
+*.log
+.DS_Store
